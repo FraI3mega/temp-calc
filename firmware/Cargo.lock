@@ -1236,6 +1236,7 @@ dependencies = [
  "embedded-graphics",
  "esp-bootloader-esp-idf",
  "esp-hal",
+ "heapless 0.9.3",
  "nb 1.1.0",
  "panic-rtt-target",
  "rtt-target",

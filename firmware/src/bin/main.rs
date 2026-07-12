@@ -12,9 +12,11 @@ use esp_hal::clock::CpuClock;
 use esp_hal::main;
 use esp_hal::peripherals::{ADC1, GPIO3};
 use esp_hal::time::{Duration, Instant};
+use heapless::String;
 use panic_rtt_target as _;
 use rtt_target::rprintln;
 
+use core::fmt::Write;
 use embedded_graphics::Drawable;
 use embedded_graphics::mono_font::MonoTextStyle;
 use embedded_graphics::pixelcolor::BinaryColor;
@@ -48,7 +50,7 @@ fn main() -> ! {
 
     let mut delay = Delay::new();
 
-    let i2c_config = Config::default().with_frequency(Rate::from_khz(100));
+    let i2c_config = Config::default().with_frequency(Rate::from_khz(400));
 
     let i2c = I2c::new(peripherals.I2C0, i2c_config)
         .unwrap()
@@ -74,16 +76,30 @@ fn main() -> ! {
         .unwrap();
 
     display.flush().unwrap();
-    const POT_DIV: u16 = 382;
+    const POT_DIV_DIGIT: u16 = 400;
 
-    rprintln!("Hello world!");
+    let mut buf: String<32> = String::new();
     loop {
         let pot1_val: u16 = nb::block!(adc1.read_oneshot(&mut pot1)).unwrap();
         let pot2_val: u16 = nb::block!(adc1.read_oneshot(&mut pot2)).unwrap();
         // Vout = Dout * Vmax / Dmax, Vmax is 750 mV for 0dB
-        rprintln!("Pot1: {}, Pot2: {} mV", pot1_val, pot2_val);
+
+        let digit = pot1_val / POT_DIV_DIGIT;
+        rprintln!("adc1 : {} digit: {}", pot1_val, digit);
+
+        write!(buf, "{}", digit).unwrap();
+
+        let text = Text::new(&buf, Point::new(10, 10), style);
+        text.draw(&mut display).unwrap();
+        display.flush().unwrap();
 
         delay.delay_millis(200);
+        text.bounding_box()
+            .into_styled(PrimitiveStyle::with_fill(BinaryColor::Off))
+            .draw(&mut display)
+            .unwrap();
+        display.flush().unwrap();
+        buf.clear();
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
