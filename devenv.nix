@@ -47,6 +47,7 @@ in
     espflash
     esp-config
     espsegs
+    cargo-deny
   ];
 
   # https://devenv.sh/languages/
