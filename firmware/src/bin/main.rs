@@ -10,6 +10,7 @@
 use embedded_graphics::mono_font::ascii::FONT_6X13_BOLD;
 use esp_hal::clock::CpuClock;
 use esp_hal::main;
+use esp_hal::peripherals::{ADC1, GPIO3};
 use esp_hal::time::{Duration, Instant};
 use panic_rtt_target as _;
 use rtt_target::rprintln;
@@ -20,7 +21,8 @@ use embedded_graphics::pixelcolor::BinaryColor;
 use embedded_graphics::prelude::{Dimensions, Point, Primitive};
 use embedded_graphics::primitives::PrimitiveStyle;
 use embedded_graphics::text::Text;
-use esp_hal::analog::adc::{Adc, AdcConfig, Attenuation};
+use esp_hal::analog::adc::AdcCalScheme;
+use esp_hal::analog::adc::{Adc, AdcCalBasic, AdcCalCurve, AdcConfig, Attenuation};
 use esp_hal::delay::Delay;
 use esp_hal::gpio::{DriveMode, Flex, InputConfig, OutputConfig, Pull};
 use esp_hal::i2c::master::I2c;
@@ -54,7 +56,10 @@ fn main() -> ! {
         .with_scl(peripherals.GPIO9);
 
     let mut adc1_config = AdcConfig::new();
-    let mut pin = adc1_config.enable_pin(peripherals.GPIO0, Attenuation::_11dB);
+    let mut pot1 = adc1_config
+        .enable_pin_with_cal::<_, AdcCalBasic<ADC1>>(peripherals.GPIO0, Attenuation::_0dB);
+    let mut pot2 = adc1_config
+        .enable_pin_with_cal::<_, AdcCalBasic<ADC1>>(peripherals.GPIO1, Attenuation::_0dB);
     let mut adc1 = Adc::new(peripherals.ADC1, adc1_config);
 
     let interface = I2CDisplayInterface::new(i2c);
@@ -69,13 +74,16 @@ fn main() -> ! {
         .unwrap();
 
     display.flush().unwrap();
+    const POT_DIV: u16 = 382;
 
     rprintln!("Hello world!");
     loop {
-        let pin_value: u16 = nb::block!(adc1.read_oneshot(&mut pin)).unwrap();
-        rprintln!("ADC: {}", pin_value);
+        let pot1_val: u16 = nb::block!(adc1.read_oneshot(&mut pot1)).unwrap();
+        let pot2_val: u16 = nb::block!(adc1.read_oneshot(&mut pot2)).unwrap();
+        // Vout = Dout * Vmax / Dmax, Vmax is 750 mV for 0dB
+        rprintln!("Pot1: {}, Pot2: {} mV", pot1_val, pot2_val);
 
-        delay.delay_millis(1500);
+        delay.delay_millis(200);
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
