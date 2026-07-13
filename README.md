@@ -13,3 +13,6 @@ a calculator you use temporarily,that pains you forever
 ## Mockup of the interface
 
 ![left potentiometer with digits, a button, rigth potentiometer with actions](./assets/UI.svg)
+
+## A very crude schematic
+![connection schematic](./assets/schem.png) 
