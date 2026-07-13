@@ -15,7 +15,7 @@ use esp_hal::time::{Duration, Instant};
 use heapless::String;
 use panic_rtt_target as _;
 use rtt_target::rprintln;
-use temp_calc::{Action, Symbol};
+use temp_calc::{Action, State, Symbol};
 
 use core::fmt::Write;
 use embedded_graphics::Drawable;
@@ -27,7 +27,7 @@ use embedded_graphics::text::Text;
 use esp_hal::analog::adc::AdcCalScheme;
 use esp_hal::analog::adc::{Adc, AdcCalBasic, AdcCalCurve, AdcConfig, Attenuation};
 use esp_hal::delay::Delay;
-use esp_hal::gpio::{DriveMode, Flex, InputConfig, OutputConfig, Pull};
+use esp_hal::gpio::{DriveMode, Flex, Input, InputConfig, OutputConfig, Pull};
 use esp_hal::i2c::master::I2c;
 use esp_hal::{i2c::master::Config, time::Rate};
 use ssd1306::{I2CDisplayInterface, Ssd1306, prelude::*};
@@ -48,6 +48,11 @@ fn main() -> ! {
 
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
     let peripherals = esp_hal::init(config);
+
+    let mut button = Input::new(
+        peripherals.GPIO21,
+        InputConfig::default().with_pull(Pull::Up),
+    );
 
     let mut delay = Delay::new();
 
@@ -78,14 +83,15 @@ fn main() -> ! {
 
     let mut buf: String<32> = String::new();
     let mut buf_op: String<2> = String::new();
+    let mut state = State::init();
+
+    let mut was_pressed = false;
     loop {
         let pot1_val: u16 = nb::block!(adc1.read_oneshot(&mut pot1)).unwrap();
         let pot2_val: u16 = nb::block!(adc1.read_oneshot(&mut pot2)).unwrap();
-        // Vout = Dout * Vmax / Dmax, Vmax is 750 mV for 0dB
 
         let digit = pot1_val / POT_DIV_DIGIT;
         rprintln!("adc1 : {} digit: {}", pot1_val, digit);
-        write!(buf, "{}", digit).unwrap();
 
         let action = match pot2_val / POT_DIV_ACTION {
             0 => Action::Calculate,
@@ -93,7 +99,7 @@ fn main() -> ! {
             2 => Action::Insert(Symbol::Subtraction),
             3 => Action::Insert(Symbol::Multiplication),
             4 => Action::Insert(Symbol::Division),
-            5 => Action::Insert(Symbol::Number(digit as u32)),
+            5 => Action::Insert(Symbol::Number(digit as i32)),
             6 => Action::Delete,
             _ => Action::AllClear,
         };
@@ -103,11 +109,26 @@ fn main() -> ! {
         let action_text = Text::new(&buf_op, Point::new(96, 10), style);
         action_text.draw(&mut display).unwrap();
 
-        let number_line = Text::new(&buf, Point::new(0, 10), style);
+        let number_line_text = &state.get_calculation_as_string().clone();
+
+        let number_line = Text::new(number_line_text, Point::new(0, 10), style);
         number_line.draw(&mut display).unwrap();
+        if let Some(result) = state.get_last_result() {
+            write!(buf, "{}", result).unwrap();
+        }
+        let result_field = Text::new(&buf, Point::new(0, 50), style);
+        result_field.draw(&mut display).unwrap();
         display.flush().unwrap();
 
-        delay.delay_millis(200);
+        let pressed = button.is_low();
+
+        if pressed && !was_pressed {
+            state.action(action);
+        }
+
+        was_pressed = pressed;
+
+        delay.delay_millis(20);
         number_line
             .bounding_box()
             .into_styled(PrimitiveStyle::with_fill(BinaryColor::Off))
@@ -118,9 +139,14 @@ fn main() -> ! {
             .into_styled(PrimitiveStyle::with_fill(BinaryColor::Off))
             .draw(&mut display)
             .unwrap();
-        display.flush().unwrap();
+        result_field
+            .bounding_box()
+            .into_styled(PrimitiveStyle::with_fill(BinaryColor::Off))
+            .draw(&mut display)
+            .unwrap();
         buf.clear();
         buf_op.clear();
+        rprintln!("{:?}", state.get_calculation());
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples

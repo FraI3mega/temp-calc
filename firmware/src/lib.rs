@@ -1,12 +1,12 @@
 #![no_std]
-use core::fmt;
-
-use heapless::Vec;
+use core::fmt::{Display, Write};
+use core::{fmt, iter::StepBy};
+use heapless::{String, Vec, format};
 use rtt_target::rprintln;
 
 #[derive(Copy, Clone, Debug)]
 pub enum Symbol {
-    Number(u32),
+    Number(i32),
     Addition,
     Subtraction,
     Multiplication,
@@ -43,19 +43,44 @@ impl fmt::Display for Action {
         }
     }
 }
-struct State {
-    last_result: Option<u32>,
+pub struct State {
+    last_result: Option<i32>,
     calculation: Vec<Symbol, 3>,
 }
 
 impl State {
     pub fn init() -> State {
         State {
-            /// number1, operation, number2
+            // number1, operation, number2
             calculation: Vec::new(),
             last_result: None,
         }
     }
+
+    pub fn get_last_result(&self) -> Option<i32> {
+        self.last_result
+    }
+
+    pub fn get_calculation(&self) -> Vec<Symbol, 3> {
+        self.calculation.clone()
+    }
+
+    pub fn get_calculation_as_string(&self) -> String<32> {
+        let mut buf: String<32> = String::new();
+        match self.calculation.len() {
+            1 => write!(buf, "{}", self.calculation[0]).unwrap(),
+            2 => write!(buf, "{} {}", self.calculation[0], self.calculation[1]).unwrap(),
+            3 => write!(
+                buf,
+                "{} {} {}",
+                self.calculation[0], self.calculation[1], self.calculation[2]
+            )
+            .unwrap(),
+            _ => (),
+        }
+        buf
+    }
+
     pub fn action(&mut self, action: Action) {
         match action {
             Action::Insert(symbol) => {
@@ -73,6 +98,9 @@ impl State {
                 }
             }
             Action::Calculate => {
+                if self.calculation.len() == 0 {
+                    return;
+                }
                 if let Symbol::Number(number1) = self.calculation[0]
                     && let Symbol::Number(number2) = self.calculation[2]
                 {
