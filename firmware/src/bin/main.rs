@@ -7,6 +7,8 @@
 )]
 #![deny(clippy::large_stack_frames)]
 
+use embedded_graphics::geometry::Size;
+use embedded_graphics::image::Image;
 use embedded_graphics::mono_font::ascii::FONT_6X13_BOLD;
 use esp_hal::clock::CpuClock;
 use esp_hal::main;
@@ -16,13 +18,14 @@ use panic_rtt_target as _;
 use profont::{PROFONT_14_POINT, PROFONT_18_POINT, PROFONT_24_POINT};
 use rtt_target::rprintln;
 use temp_calc::{Action, State, Symbol};
+use tinybmp::Bmp;
 
 use core::fmt::Write;
 use embedded_graphics::Drawable;
 use embedded_graphics::mono_font::MonoTextStyle;
 use embedded_graphics::pixelcolor::BinaryColor;
 use embedded_graphics::prelude::{Dimensions, Point, Primitive};
-use embedded_graphics::primitives::PrimitiveStyle;
+use embedded_graphics::primitives::{PrimitiveStyle, Rectangle, StyledDrawable};
 use embedded_graphics::text::Text;
 use esp_hal::analog::adc::{Adc, AdcCalBasic, AdcConfig, Attenuation};
 use esp_hal::delay::Delay;
@@ -74,9 +77,15 @@ fn main() -> ! {
         .into_buffered_graphics_mode();
     display.init().unwrap();
 
-    let style = MonoTextStyle::new(&PROFONT_14_POINT, BinaryColor::On);
-
+    let qoi = Bmp::from_slice(include_bytes!("../splash.bmp")).unwrap();
+    Image::new(&qoi, Point::zero()).draw(&mut display).unwrap();
     display.flush().unwrap();
+    delay.delay_millis(1000);
+    let style = MonoTextStyle::new(&PROFONT_14_POINT, BinaryColor::On);
+    Rectangle::new(Point::zero(), Size::new(128, 64))
+        .draw_styled(&PrimitiveStyle::with_fill(BinaryColor::Off), &mut display)
+        .unwrap();
+
     const POT_DIV_DIGIT: u16 = 4000 / 10;
     const POT_DIV_ACTION: u16 = 4000 / 8;
 
