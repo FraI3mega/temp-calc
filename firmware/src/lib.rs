@@ -5,7 +5,7 @@ use heapless::Vec;
 use rtt_target::rprintln;
 
 #[derive(Copy, Clone, Debug)]
-enum Symbol {
+pub enum Symbol {
     Number(u32),
     Addition,
     Subtraction,
@@ -25,7 +25,7 @@ impl fmt::Display for Symbol {
     }
 }
 
-enum Action {
+pub enum Action {
     Insert(Symbol),
     Calculate,
     ///Deletes last symbol
@@ -33,20 +33,30 @@ enum Action {
     AllClear,
 }
 
+impl fmt::Display for Action {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Action::Insert(symbol) => write!(f, "{}", symbol),
+            Action::Calculate => write!(f, "="),
+            Action::Delete => write!(f, "<"),
+            Action::AllClear => write!(f, "AC"),
+        }
+    }
+}
 struct State {
     last_result: Option<u32>,
     calculation: Vec<Symbol, 3>,
 }
 
 impl State {
-    fn init() -> State {
+    pub fn init() -> State {
         State {
             /// number1, operation, number2
             calculation: Vec::new(),
             last_result: None,
         }
     }
-    fn action(&mut self, action: Action) {
+    pub fn action(&mut self, action: Action) {
         match action {
             Action::Insert(symbol) => {
                 let mut symbol = symbol;

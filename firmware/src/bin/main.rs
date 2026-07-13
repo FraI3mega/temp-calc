@@ -15,6 +15,7 @@ use esp_hal::time::{Duration, Instant};
 use heapless::String;
 use panic_rtt_target as _;
 use rtt_target::rprintln;
+use temp_calc::{Action, Symbol};
 
 use core::fmt::Write;
 use embedded_graphics::Drawable;
@@ -71,14 +72,12 @@ fn main() -> ! {
 
     let style = MonoTextStyle::new(&FONT_6X13_BOLD, BinaryColor::On);
 
-    Text::new("test", Point::new(0, 20), style)
-        .draw(&mut display)
-        .unwrap();
-
     display.flush().unwrap();
-    const POT_DIV_DIGIT: u16 = 400;
+    const POT_DIV_DIGIT: u16 = 4000 / 10;
+    const POT_DIV_ACTION: u16 = 4000 / 8;
 
     let mut buf: String<32> = String::new();
+    let mut buf_op: String<2> = String::new();
     loop {
         let pot1_val: u16 = nb::block!(adc1.read_oneshot(&mut pot1)).unwrap();
         let pot2_val: u16 = nb::block!(adc1.read_oneshot(&mut pot2)).unwrap();
@@ -86,20 +85,42 @@ fn main() -> ! {
 
         let digit = pot1_val / POT_DIV_DIGIT;
         rprintln!("adc1 : {} digit: {}", pot1_val, digit);
-
         write!(buf, "{}", digit).unwrap();
 
-        let text = Text::new(&buf, Point::new(10, 10), style);
-        text.draw(&mut display).unwrap();
+        let action = match pot2_val / POT_DIV_ACTION {
+            0 => Action::Calculate,
+            1 => Action::Insert(Symbol::Addition),
+            2 => Action::Insert(Symbol::Subtraction),
+            3 => Action::Insert(Symbol::Multiplication),
+            4 => Action::Insert(Symbol::Division),
+            5 => Action::Insert(Symbol::Number(digit as u32)),
+            6 => Action::Delete,
+            _ => Action::AllClear,
+        };
+        rprintln!("adc2: {}, action: {}", pot2_val, action);
+
+        write!(buf_op, "{}", action).unwrap();
+        let action_text = Text::new(&buf_op, Point::new(96, 10), style);
+        action_text.draw(&mut display).unwrap();
+
+        let number_line = Text::new(&buf, Point::new(0, 10), style);
+        number_line.draw(&mut display).unwrap();
         display.flush().unwrap();
 
         delay.delay_millis(200);
-        text.bounding_box()
+        number_line
+            .bounding_box()
+            .into_styled(PrimitiveStyle::with_fill(BinaryColor::Off))
+            .draw(&mut display)
+            .unwrap();
+        action_text
+            .bounding_box()
             .into_styled(PrimitiveStyle::with_fill(BinaryColor::Off))
             .draw(&mut display)
             .unwrap();
         display.flush().unwrap();
         buf.clear();
+        buf_op.clear();
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
