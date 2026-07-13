@@ -1,7 +1,7 @@
 #![no_std]
-use core::fmt::{Display, Write};
-use core::{fmt, iter::StepBy};
-use heapless::{String, Vec, format};
+use core::fmt;
+use core::fmt::Write;
+use heapless::{String, Vec};
 use rtt_target::rprintln;
 
 #[derive(Copy, Clone, Debug)]
@@ -39,7 +39,7 @@ impl fmt::Display for Action {
             Action::Insert(symbol) => write!(f, "{}", symbol),
             Action::Calculate => write!(f, "="),
             Action::Delete => write!(f, "<"),
-            Action::AllClear => write!(f, "AC"),
+            Action::AllClear => write!(f, "C"),
         }
     }
 }
@@ -98,7 +98,7 @@ impl State {
                 }
             }
             Action::Calculate => {
-                if self.calculation.len() == 0 {
+                if self.calculation.is_empty() {
                     return;
                 }
                 if let Symbol::Number(number1) = self.calculation[0]
@@ -114,12 +114,12 @@ impl State {
                             self.last_result = Some(result);
                         }
                         Symbol::Subtraction => {
-                            let result = number1 + number2;
+                            let result = number1 - number2;
                             self.calculation.clear();
                             self.last_result = Some(result);
                         }
                         Symbol::Multiplication => {
-                            let result = number1 + number2;
+                            let result = number1 * number2;
                             self.calculation.clear();
                             self.last_result = Some(result);
                         }

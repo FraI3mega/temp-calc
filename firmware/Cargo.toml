@@ -22,6 +22,7 @@ embedded-graphics = "0.8.2"
 ssd1306 = "0.10.0"
 nb = "1.1.0"
 heapless = "0.9.3"
+profont = "0.7.0"
 
 # For fine tuning these settings, please refer to https://doc.rust-lang.org/cargo/reference/profiles.html
 [profile.dev]

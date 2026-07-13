@@ -10,10 +10,10 @@
 use embedded_graphics::mono_font::ascii::FONT_6X13_BOLD;
 use esp_hal::clock::CpuClock;
 use esp_hal::main;
-use esp_hal::peripherals::{ADC1, GPIO3};
-use esp_hal::time::{Duration, Instant};
+use esp_hal::peripherals::ADC1;
 use heapless::String;
 use panic_rtt_target as _;
+use profont::{PROFONT_14_POINT, PROFONT_18_POINT, PROFONT_24_POINT};
 use rtt_target::rprintln;
 use temp_calc::{Action, State, Symbol};
 
@@ -24,10 +24,9 @@ use embedded_graphics::pixelcolor::BinaryColor;
 use embedded_graphics::prelude::{Dimensions, Point, Primitive};
 use embedded_graphics::primitives::PrimitiveStyle;
 use embedded_graphics::text::Text;
-use esp_hal::analog::adc::AdcCalScheme;
-use esp_hal::analog::adc::{Adc, AdcCalBasic, AdcCalCurve, AdcConfig, Attenuation};
+use esp_hal::analog::adc::{Adc, AdcCalBasic, AdcConfig, Attenuation};
 use esp_hal::delay::Delay;
-use esp_hal::gpio::{DriveMode, Flex, Input, InputConfig, OutputConfig, Pull};
+use esp_hal::gpio::{Input, InputConfig, Pull};
 use esp_hal::i2c::master::I2c;
 use esp_hal::{i2c::master::Config, time::Rate};
 use ssd1306::{I2CDisplayInterface, Ssd1306, prelude::*};
@@ -49,12 +48,12 @@ fn main() -> ! {
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
     let peripherals = esp_hal::init(config);
 
-    let mut button = Input::new(
+    let button = Input::new(
         peripherals.GPIO21,
         InputConfig::default().with_pull(Pull::Up),
     );
 
-    let mut delay = Delay::new();
+    let delay = Delay::new();
 
     let i2c_config = Config::default().with_frequency(Rate::from_khz(400));
 
@@ -75,7 +74,7 @@ fn main() -> ! {
         .into_buffered_graphics_mode();
     display.init().unwrap();
 
-    let style = MonoTextStyle::new(&FONT_6X13_BOLD, BinaryColor::On);
+    let style = MonoTextStyle::new(&PROFONT_14_POINT, BinaryColor::On);
 
     display.flush().unwrap();
     const POT_DIV_DIGIT: u16 = 4000 / 10;
@@ -106,7 +105,11 @@ fn main() -> ! {
         rprintln!("adc2: {}, action: {}", pot2_val, action);
 
         write!(buf_op, "{}", action).unwrap();
-        let action_text = Text::new(&buf_op, Point::new(96, 10), style);
+        let action_text = Text::new(
+            &buf_op,
+            Point::new(108, 24),
+            MonoTextStyle::new(&PROFONT_24_POINT, BinaryColor::On),
+        );
         action_text.draw(&mut display).unwrap();
 
         let number_line_text = &state.get_calculation_as_string().clone();
@@ -116,7 +119,11 @@ fn main() -> ! {
         if let Some(result) = state.get_last_result() {
             write!(buf, "{}", result).unwrap();
         }
-        let result_field = Text::new(&buf, Point::new(0, 50), style);
+        let result_field = Text::new(
+            &buf,
+            Point::new(0, 60),
+            MonoTextStyle::new(&PROFONT_18_POINT, BinaryColor::On),
+        );
         result_field.draw(&mut display).unwrap();
         display.flush().unwrap();
 
@@ -146,7 +153,6 @@ fn main() -> ! {
             .unwrap();
         buf.clear();
         buf_op.clear();
-        rprintln!("{:?}", state.get_calculation());
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples

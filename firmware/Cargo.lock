@@ -982,6 +982,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "profont"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "016681370a9dd6e7ddb4c1a959922fd59dc45e5ebaa5ff5b13090267898ced34"
+dependencies = [
+ "embedded-graphics",
+]
+
+[[package]]
 name = "pulldown-cmark"
 version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1239,6 +1248,7 @@ dependencies = [
  "heapless 0.9.3",
  "nb 1.1.0",
  "panic-rtt-target",
+ "profont",
  "rtt-target",
  "ssd1306",
 ]
