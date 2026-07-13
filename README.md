@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./assets/Logo.png" alt="Temp-calc logo"/>
+</p>
+
 # Temp-calc
 
 ## A calculator that makes you wish to never use it again
