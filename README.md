@@ -16,6 +16,9 @@ a calculator you use temporarily,that pains you forever
 
 ## Mockup of the interface
 
+The left dial selects the digit, while the right one decides the operation.
+The the middle button is enter.
+
 ![left potentiometer with digits, a button, right potentiometer with actions](./assets/UI.svg)
 
 ## A very crude schematic
