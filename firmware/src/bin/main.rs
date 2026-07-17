@@ -93,13 +93,23 @@ fn main() -> ! {
     let mut buf_op: String<2> = String::new();
     let mut state = State::init();
 
+    if cfg!(debug_assertions) {
+        state.action(Action::Insert(Symbol::Number(3)));
+        state.action(Action::Insert(Symbol::Multiplication));
+        state.action(Action::Insert(Symbol::Number(6)));
+        state.action(Action::Calculate);
+        state.action(Action::Insert(Symbol::Number(3)));
+        state.action(Action::Insert(Symbol::Multiplication));
+        state.action(Action::Insert(Symbol::Number(6)));
+    }
+
     let mut was_pressed = false;
     loop {
         let pot1_val: u16 = nb::block!(adc1.read_oneshot(&mut pot1)).unwrap();
         let pot2_val: u16 = nb::block!(adc1.read_oneshot(&mut pot2)).unwrap();
 
         let digit = pot1_val / POT_DIV_DIGIT;
-        rprintln!("adc1 : {} digit: {}", pot1_val, digit);
+        // rprintln!("adc1 : {} digit: {}", pot1_val, digit);
 
         let action = match pot2_val / POT_DIV_ACTION {
             0 => Action::Calculate,
@@ -111,7 +121,7 @@ fn main() -> ! {
             6 => Action::Delete,
             _ => Action::AllClear,
         };
-        rprintln!("adc2: {}, action: {}", pot2_val, action);
+        // rprintln!("adc2: {}, action: {}", pot2_val, action);
 
         write!(buf_op, "{}", action).unwrap();
         let action_text = Text::new(
