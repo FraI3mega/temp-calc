@@ -4,6 +4,12 @@
 	(generator_version "10.0")
 	(uuid "54b6f051-bb37-40de-8bc2-00b04e73c28c")
 	(paper "A4")
+	(title_block
+		(title "Temp-calc")
+		(date "2026-07-17")
+		(company "FraI3mega")
+		(comment 1 "Just a reference")
+	)
 	(lib_symbols
 		(symbol "Device:R"
 			(pin_numbers
@@ -1768,7 +1774,7 @@
 				)
 			)
 		)
-		(property "Value" "R_Potentiometer_Small"
+		(property "Value" "500k"
 			(at 107.95 97.79 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2119,7 +2125,7 @@
 				)
 			)
 		)
-		(property "Value" "R_Potentiometer_Small"
+		(property "Value" "500k"
 			(at 134.62 97.79 90)
 			(show_name no)
 			(do_not_autoplace no)
